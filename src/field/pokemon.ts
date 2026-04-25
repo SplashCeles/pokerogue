@@ -14,7 +14,6 @@ import type { FORCED_RIVAL_SIGNATURE_MOVES } from "#balance/moves/signature-move
 import type { SpeciesFormEvolution } from "#balance/pokemon-evolutions";
 import {
   FusionSpeciesFormEvolution,
-  pokemonEvolutions,
   pokemonPrevolutions,
   validateShedinjaEvo,
 } from "#balance/pokemon-evolutions";
@@ -2729,8 +2728,8 @@ export abstract class Pokemon extends Phaser.GameObjects.Container {
    * @returns The evolution this pokemon can currently evolve into, or `null` if it cannot evolve
    */
   getEvolution(): SpeciesFormEvolution | null {
-    if (Object.hasOwn(pokemonEvolutions, this.species.speciesId)) {
-      const evolutions = pokemonEvolutions[this.species.speciesId];
+    if (speciesDataRegistry.hasEvolutions(this.species.speciesId)) {
+      const evolutions = speciesDataRegistry.getEvolutions(this.species.speciesId);
       for (const e of evolutions) {
         if (e.validate(this)) {
           return e;
@@ -2738,10 +2737,10 @@ export abstract class Pokemon extends Phaser.GameObjects.Container {
       }
     }
 
-    if (this.isFusion() && this.fusionSpecies && Object.hasOwn(pokemonEvolutions, this.fusionSpecies.speciesId)) {
-      const fusionEvolutions = pokemonEvolutions[this.fusionSpecies.speciesId].map(
-        e => new FusionSpeciesFormEvolution(this.species.speciesId, e),
-      );
+    if (this.isFusion() && this.fusionSpecies && speciesDataRegistry.hasEvolutions(this.fusionSpecies.speciesId)) {
+      const fusionEvolutions = speciesDataRegistry
+        .getEvolutions(this.fusionSpecies.speciesId)
+        .map(e => new FusionSpeciesFormEvolution(this.species.speciesId, e));
       for (const fe of fusionEvolutions) {
         if (fe.validate(this, true)) {
           return fe;
@@ -3109,8 +3108,8 @@ export abstract class Pokemon extends Phaser.GameObjects.Container {
     const filter = forStarter
       ? (species: PokemonSpecies) => {
           return (
-            Object.hasOwn(pokemonEvolutions, species.speciesId)
-            && !Object.hasOwn(pokemonPrevolutions, species.speciesId)
+            speciesDataRegistry.hasEvolutions(species.speciesId)
+            && !pokemonPrevolutions.hasOwnProperty(species.speciesId)
             && !species.subLegendary
             && !species.legendary
             && !species.mythical
@@ -6221,7 +6220,7 @@ export class PlayerPokemon extends Pokemon {
 
     const evoSpecies = isFusion ? this.fusionSpecies : this.species;
     if (evoSpecies?.speciesId === SpeciesId.NINCADA && evolution.speciesId === SpeciesId.NINJASK) {
-      const newEvolution = pokemonEvolutions[evoSpecies.speciesId][1];
+      const newEvolution = speciesDataRegistry.getEvolutions(evoSpecies.speciesId)[1];
 
       if (validateShedinjaEvo()) {
         const newPokemon = globalScene.addPlayerPokemon(
